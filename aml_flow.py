@@ -102,23 +102,29 @@ def download_daily_data_from_hdfs(base_local_path, start_time, end_time):
         date_list.append(range_date.strftime('%Y-%m-%d'))
     # 下载起始时间范围内的文件
     for sl_dir in daily_dir_list:
+        # clear_local_path(base_local_path.format(sl_dir))
         for date in date_list:
-            clear_local_path(base_local_path.format(sl_dir)+"{}/".format(date))
-            try:
-                print("downloading {} from {}".format(base_local_path.format(sl_dir),
-                                                      base_remote_daily_path.format(sl_dir, date)))
-                hdfs_client.download(base_remote_daily_path.format(sl_dir, date), base_local_path.format(sl_dir))
-            except HdfsError:
-                # 这个hdfs库无法判断文件是否存在，只能采用这种粗暴的方式
-                print(base_remote_daily_path.format(sl_dir, date) + "，hdfs文件不存在")
+            # 当本地文件不存在时，才下载
+            if not os.path.exists(base_local_path.format(sl_dir)+'{}/'.format(date)):
+                try:
+                    print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_daily_path.format(sl_dir, date)))
+                    hdfs_client.download(base_remote_daily_path.format(sl_dir, date), base_local_path.format(sl_dir))
+                except HdfsError as e:
+                    # 这个hdfs库无法判断文件是否存在，只能采用这种粗暴的方式
+                    print(base_remote_daily_path.format(sl_dir, date) + "下载文件出错:" + e.message)
+            else:
+                print(base_local_path.format(sl_dir)+'{}/'.format(date) + "已存在，无需下载")
     return date_list
 
 
 def download_static_data_from_hdfs(base_local_path):
     for sl_dir in static_dir_list:
-        clear_local_path(base_local_path.format(sl_dir))
-        print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_static_path.format(sl_dir)))
-        hdfs_client.download(base_remote_static_path.format(sl_dir), base_local_path.format(sl_dir))
+        if not os.path.exists(base_local_path.format(sl_dir)):
+            # clear_local_path(base_local_path.format(sl_dir))
+            print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_static_path.format(sl_dir)))
+            hdfs_client.download(base_remote_static_path.format(sl_dir), base_local_path.format(sl_dir))
+        else:
+            print(base_local_path.format(sl_dir) + "已存在，无需下载")
 
 
 get_data_operator = PythonOperator(

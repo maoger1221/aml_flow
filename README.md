@@ -124,7 +124,7 @@ nohup airflow scheduler &
 # 7. json配置文件格式
 ```
 {
-  "hdfs_url": "http://172.27.128.237:50070",
+  "hdfs_url": "localhost:50070",
   "hdfs_user": "hdfs",
   "daily_dir_list": [
     "trx",
@@ -208,7 +208,7 @@ def clear_local_path(local_path):
 
 def get_config_from_variables(**kwargs):
     # 获取配置文件中的参数
-    sl_config = Variable.get('sl_config', deserialize_json=True, default_var={"hdfs_url":"http://172.27.128.237:50070","hdfs_user":"hdfs","daily_dir_list":["trx","str"],"static_dir_list":["retail","corporate","account"],"base_local_path":"/root/airflow/aml_data/sl_data/{}/","base_local_metrics_path":"/root/airflow/aml_data/sl_data/{}/for_metrics/","base_local_model_path":"/root/airflow/aml_data/model/{}","model_prefix":"he_test_xgboost","base_remote_daily_path":"/anti-money/daily_data_group/{}/daily/{}","base_remote_static_path":"/anti-money/daily_data_group/{}/all","base_remote_model_path":"/anti-money/he_test/model/{}","start_time":"2018-05-01","end_time":"2018-05-27","metrics_start_time":"2018-05-28","metrics_end_time":"2018-05-30"})
+    sl_config = Variable.get('sl_config', deserialize_json=True, default_var={"hdfs_url":"localhost:50070","hdfs_user":"hdfs","daily_dir_list":["trx","str"],"static_dir_list":["retail","corporate","account"],"base_local_path":"/root/airflow/aml_data/sl_data/{}/","base_local_metrics_path":"/root/airflow/aml_data/sl_data/{}/for_metrics/","base_local_model_path":"/root/airflow/aml_data/model/{}","model_prefix":"he_test_xgboost","base_remote_daily_path":"/anti-money/daily_data_group/{}/daily/{}","base_remote_static_path":"/anti-money/daily_data_group/{}/all","base_remote_model_path":"/anti-money/he_test/model/{}","start_time":"2018-05-01","end_time":"2018-05-27","metrics_start_time":"2018-05-28","metrics_end_time":"2018-05-30"})
     print('config: {}'.format(sl_config))
     hdfs_url = sl_config['hdfs_url']
     hdfs_user = sl_config['hdfs_user']
