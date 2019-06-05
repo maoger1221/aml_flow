@@ -21,8 +21,8 @@ from sklearn import metrics
 args = {
     'owner': 'aml',
     'start_date': airflow.utils.dates.days_ago(0, hour=0),
-    'retries': 3,
-    'retry_delay': datetime.timedelta(minutes=2),
+    'retries': 2,
+    'retry_delay': datetime.timedelta(minutes=5),
     'email': ['maotao@4paradigm.com', 'maopengyu@4paradigm.com'],
     'email_on_failure': True,
     'email_on_retry': True,
@@ -75,9 +75,9 @@ def clear_local_path(local_path):
         else:
             # 删除目录及其下子文件
             shutil.rmtree(local_path)
-            os.mkdir(local_path)
+            os.makedirs(local_path)
     else:
-        os.mkdir(local_path)
+        os.makedirs(local_path)
 
 
 def get_data_from_hdfs(**kwargs):
@@ -107,7 +107,7 @@ def download_daily_data_from_hdfs(base_local_path, start_time, end_time):
             # 当本地文件不存在时，才下载
             if not os.path.exists(base_local_path.format(sl_dir)+'{}/'.format(date)):
                 if not os.path.exists(base_local_path.format(sl_dir)):
-                    os.mkdir(base_local_path.format(sl_dir))
+                    os.makedirs(base_local_path.format(sl_dir))
                 try:
                     print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_daily_path.format(sl_dir, date)))
                     # 这个client的download，目标本地路径/a/b/，远端路径/c/d/，当/a/b/存在时，下载后/a/b/d/；当/a/b/不存在时，下载后/a/b/
@@ -125,7 +125,7 @@ def download_static_data_from_hdfs(base_local_path):
         if not os.path.exists(base_local_path.format(sl_dir)):
             # clear_local_path(base_local_path.format(sl_dir))
             if not os.path.exists(base_local_path.format(sl_dir)):
-                os.mkdir(base_local_path.format(sl_dir))
+                os.makedirs(base_local_path.format(sl_dir))
             print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_static_path.format(sl_dir)))
             hdfs_client.download(base_remote_static_path.format(sl_dir), base_local_path.format(sl_dir))
         else:
