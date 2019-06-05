@@ -64,8 +64,8 @@ today = datetime.date.today().strftime('%Y-%m-%d')
 poke_interval = 60
 model_id = '{}_{}'.format(model_prefix, today)
 uploaded_model_path = base_remote_model_path.format(model_id)+'.model'
+local_model_path = base_local_model_path.format('{}.model'.format(model_prefix))
 hdfs_client = InsecureClient(url=hdfs_url, user=hdfs_user)
-
 #############################################
 
 
@@ -213,8 +213,6 @@ def train_model(**kwargs):
     X = kwargs['ti'].xcom_pull(key='X', task_ids='process_data_operator')
     y = kwargs['ti'].xcom_pull(key='y', task_ids='process_data_operator')
 
-    local_model_path = base_local_model_path.format('{}.model'.format(model_prefix))
-
     # 模型训练
     dtrain = xgb.DMatrix(X, label=y)
     watchlist = [(dtrain, 'train')]
@@ -257,8 +255,7 @@ def get_metrics(**kwargs):
     X, y, str_with_trx_with_retail_with_corporate_with_account = process_data_from_local(date_list_for_metrics, base_local_metrics_path)
 
     dtrain = xgb.DMatrix(X)
-    clear_local_path('/root/airflow/aml_data/model/')
-    model = xgb.Booster(model_file='/root/airflow/aml_data/model/he_test_xgboost.model')
+    model = xgb.Booster(model_file=local_model_path)
     y_pred = model.predict(dtrain)
     y_pred_binary = (y_pred >= 0.5) * 1
 
@@ -341,7 +338,6 @@ else:
 def predict(**kwargs):
     X = kwargs['ti'].xcom_pull(key='bp_X', task_ids='bp_process_data_operator')
     str_with_trx_with_retail_with_corporate_with_account = kwargs['ti'].xcom_pull(key='str_with_trx_with_retail_with_corporate_with_account', task_ids='process_data_operator')
-    local_model_path = base_local_model_path.format('{}.model'.format(model_prefix))
 
     dtrain = xgb.DMatrix(X)
     model = xgb.Booster(model_file=local_model_path)
