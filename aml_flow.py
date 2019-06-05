@@ -339,7 +339,7 @@ else:
 
 def predict(**kwargs):
     X = kwargs['ti'].xcom_pull(key='bp_X', task_ids='bp_process_data_operator')
-    str_with_trx_with_retail_with_corporate_with_account = kwargs['ti'].xcom_pull(key='str_with_trx_with_retail_with_corporate_with_account', task_ids='process_data_operator')
+    str_with_trx_with_retail_with_corporate_with_account = kwargs['ti'].xcom_pull(key='str_with_trx_with_retail_with_corporate_with_account', task_ids='bp_process_data_operator')
 
     dtrain = xgb.DMatrix(X)
     model = xgb.Booster(model_file=local_model_path)
