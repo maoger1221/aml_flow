@@ -39,7 +39,7 @@ dag = DAG(
 #############################################
 # 全局变量
 # 获取配置文件中的参数
-sl_config = Variable.get('sl_config', deserialize_json=True, default_var={"hdfs_url":"localhost:50070","hdfs_user":"hdfs","daily_dir_list":["trx","str"],"static_dir_list":["retail","corporate","account"],"base_local_path":"/root/airflow/aml_data/sl_data/{}/","base_local_metrics_path":"/root/airflow/aml_data/sl_data/{}/for_metrics/","base_local_model_path":"/root/airflow/aml_data/model/{}","base_local_predict_res_path":"/root/airflow/aml_data/bp_data/res/{}","model_prefix":"he_test_xgboost","predict_res_prefix":"pred_full_table","base_remote_daily_path":"/anti-money/daily_data_group/{}/daily/{}","base_remote_static_path":"/anti-money/daily_data_group/{}/all","base_remote_model_path":"/anti-money/he_test/model/{}","base_remote_predict_res_path":"/anti-money/he_test/predict_res/{}","specified_model_path":"","start_time":"2018-05-01","end_time":"2018-05-27","metrics_start_time":"2018-05-28","metrics_end_time":"2018-05-30"})
+sl_config = Variable.get('sl_config', deserialize_json=True, default_var={"hdfs_url":"localhost","hdfs_user":"hdfs","daily_dir_list":["trx","str"],"static_dir_list":["retail","corporate","account"],"base_local_path":"/root/airflow/aml_data/sl_data/{}/","base_local_metrics_path":"/root/airflow/aml_data/sl_data/{}/for_metrics/","base_local_model_path":"/root/airflow/aml_data/model/{}","base_local_model_meta_path":"/root/airflow/aml_data/model_meta/{}","base_local_predict_res_path":"/root/airflow/aml_data/bp_data/res/{}","model_prefix":"he_test_xgboost","predict_res_prefix":"pred_full_table","base_remote_daily_path":"/anti-money/daily_data_group/{}/daily/{}","base_remote_static_path":"/anti-money/daily_data_group/{}/all","base_remote_model_path":"/anti-money/he_test/model/{}","base_remote_model_meta_path":"/anti-money/he_test/model_meta/{}","base_remote_predict_res_path":"/anti-money/he_test/predict_res/{}","specified_model_path":"","start_time":"2018-05-01","end_time":"2018-05-27","metrics_start_time":"2018-05-28","metrics_end_time":"2018-05-30"})
 logging.info('config: {}'.format(sl_config))
 hdfs_url = sl_config['hdfs_url']
 hdfs_user = sl_config['hdfs_user']
@@ -51,6 +51,7 @@ base_remote_static_path = sl_config['base_remote_static_path']
 start_time = sl_config['start_time']
 end_time = sl_config['end_time']
 base_local_model_path = sl_config['base_local_model_path']
+base_local_model_meta_path = sl_config['base_local_model_meta_path']
 base_local_predict_res_path = sl_config['base_local_predict_res_path']
 model_prefix = sl_config['model_prefix']
 base_remote_model_path = sl_config['base_remote_model_path']
@@ -59,6 +60,7 @@ metrics_end_time = sl_config['metrics_end_time']
 base_local_metrics_path = sl_config['base_local_metrics_path']
 predict_res_prefix = sl_config['predict_res_prefix']
 base_remote_predict_res_path = sl_config['base_remote_predict_res_path']
+base_remote_model_meta_path = sl_config['base_remote_model_meta_path']
 specified_model_path = sl_config['specified_model_path']
 today = datetime.date.today().strftime('%Y-%m-%d')
 poke_interval = 60
@@ -281,17 +283,17 @@ def get_metrics(**kwargs):
     res_dict['precesion'] = Precesion
     res_json = json.dumps(res_dict)
 
-    local_model_meta_path = base_local_model_path.format('{}.meta.json'.format(model_prefix))
-    clear_local_path(base_local_model_path.format(''))
+    local_model_meta_path = base_local_model_meta_path.format('{}.meta.json'.format(model_prefix))
+    clear_local_path(base_local_model_meta_path.format(''))
     with open(local_model_meta_path, "w") as f:
         f.write(res_json)
 
     # 第二个参数为False，当文件不存在时return none，文件存在时返回文件信息
-    if not hdfs_client.status(base_remote_model_path.format(model_id) + '.meta.json', False):
-        hdfs_client.upload(base_remote_model_path.format(model_id) + '.meta.json', local_model_meta_path)
-        logging.info('uploaded local meta {} to {} successfully'.format(local_model_meta_path, base_remote_model_path.format( model_id) + '.meta.json'))
+    if not hdfs_client.status(base_remote_model_meta_path.format(model_id) + '.meta.json', False):
+        hdfs_client.upload(base_remote_model_meta_path.format(model_id) + '.meta.json', local_model_meta_path)
+        logging.info('uploaded local meta {} to {} successfully'.format(local_model_meta_path, base_remote_model_meta_path.format( model_id) + '.meta.json'))
     else:
-        logging.info('{}已存在'.format(base_remote_model_path.format(model_id) + '.meta.json'))
+        logging.info('{}已存在'.format(base_remote_model_meta_path.format(model_id) + '.meta.json'))
 
 
 get_metrics_operator = PythonOperator(
