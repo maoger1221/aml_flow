@@ -29,7 +29,7 @@ args = {
 }
 
 dag = DAG(
-    dag_id='aml_flow6',
+    dag_id='aml_flow',
     catchup=False,
     default_args=args,
     schedule_interval='0 0 * * *',
@@ -80,34 +80,17 @@ def clear_local_path(local_path):
         os.mkdir(local_path)
 
 
-# sensor这玩意怎么从xcom中取数据呀？现在从全局变量里取
-def get_daily_file_path(filename):
-    return base_remote_daily_path.format(filename, today)
-
-
-# 循环生成多个sensor
-for daily_dir in daily_dir_list:
-    daily_file_sensor = HdfsSensor(
-        task_id='daily_{}_file_sensor'.format(daily_dir),
-        poke_interval=poke_interval,  # (seconds)
-        timeout=60 * 60 * 24,  # timeout in 12 hours
-        filepath=get_daily_file_path(daily_dir),
-        hdfs_conn_id='aml_hdfs',
-        dag=dag
-    )
-
-
 def get_data_from_hdfs(**kwargs):
-    date_list, hdfs_client = download_data_from_hdfs(start_time, end_time, base_local_path)
+    date_list = download_data_from_hdfs(start_time, end_time, base_local_path)
     kwargs['ti'].xcom_push(key='date_list', value=date_list)
     # 下载今日的数据
     download_daily_data_from_hdfs(base_local_path, today, today)
 
 
 def download_data_from_hdfs(start_time, end_time, base_local_path):
-    date_list, hdfs_client = download_daily_data_from_hdfs(base_local_path, start_time, end_time)
+    date_list = download_daily_data_from_hdfs(base_local_path, start_time, end_time)
     download_static_data_from_hdfs(base_local_path)
-    return date_list, hdfs_client
+    return date_list
 
 
 def download_daily_data_from_hdfs(base_local_path, start_time, end_time):
@@ -119,8 +102,8 @@ def download_daily_data_from_hdfs(base_local_path, start_time, end_time):
         date_list.append(range_date.strftime('%Y-%m-%d'))
     # 下载起始时间范围内的文件
     for sl_dir in daily_dir_list:
-        clear_local_path(base_local_path.format(sl_dir))
         for date in date_list:
+            clear_local_path(base_local_path.format(sl_dir)+"{}/".format(date))
             try:
                 print("downloading {} from {}".format(base_local_path.format(sl_dir),
                                                       base_remote_daily_path.format(sl_dir, date)))
@@ -128,7 +111,7 @@ def download_daily_data_from_hdfs(base_local_path, start_time, end_time):
             except HdfsError:
                 # 这个hdfs库无法判断文件是否存在，只能采用这种粗暴的方式
                 print(base_remote_daily_path.format(sl_dir, date) + "，hdfs文件不存在")
-    return date_list, hdfs_client
+    return date_list
 
 
 def download_static_data_from_hdfs(base_local_path):
@@ -144,6 +127,24 @@ get_data_operator = PythonOperator(
     python_callable=get_data_from_hdfs,
     dag=dag,
 )
+
+
+# sensor这玩意怎么从xcom中取数据呀？现在从全局变量里取
+def get_daily_file_path(filename):
+    return base_remote_daily_path.format(filename, today)
+
+
+# 循环生成多个sensor
+for daily_dir in daily_dir_list:
+    daily_file_sensor = HdfsSensor(
+        task_id='daily_{}_file_sensor'.format(daily_dir),
+        poke_interval=poke_interval,  # (seconds)
+        timeout=60 * 60 * 24,  # timeout in 12 hours
+        filepath=get_daily_file_path(daily_dir),
+        hdfs_conn_id='aml_hdfs',
+        dag=dag
+    )
+    daily_file_sensor >> get_data_operator
 
 
 def process_data(**kwargs):
@@ -235,7 +236,7 @@ train_model_operator = PythonOperator(
 
 def get_metrics(**kwargs):
     # 下载数据
-    date_list_for_metrics, hdfs_client = download_data_from_hdfs(metrics_start_time, metrics_end_time, base_local_metrics_path)
+    date_list_for_metrics = download_data_from_hdfs(metrics_start_time, metrics_end_time, base_local_metrics_path)
     # 数据处理
     X, y, str_with_trx_with_retail_with_corporate_with_account = process_data_from_local(date_list_for_metrics, base_local_metrics_path)
 
@@ -344,5 +345,5 @@ predict_operator = PythonOperator(
 )
 
 
-daily_file_sensor >> get_data_operator >> process_data_operator >> train_model_operator >> get_metrics_operator
+get_data_operator >> process_data_operator >> train_model_operator >> get_metrics_operator
 get_data_operator >> bp_process_data_operator >> model_sensor >> predict_operator
