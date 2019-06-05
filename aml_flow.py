@@ -106,8 +106,11 @@ def download_daily_data_from_hdfs(base_local_path, start_time, end_time):
         for date in date_list:
             # 当本地文件不存在时，才下载
             if not os.path.exists(base_local_path.format(sl_dir)+'{}/'.format(date)):
+                if not os.path.exists(base_local_path.format(sl_dir)):
+                    os.mkdir(base_local_path.format(sl_dir))
                 try:
                     print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_daily_path.format(sl_dir, date)))
+                    # 这个client的download，目标本地路径/a/b/，远端路径/c/d/，当/a/b/存在时，下载后/a/b/d/；当/a/b/不存在时，下载后/a/b/
                     hdfs_client.download(base_remote_daily_path.format(sl_dir, date), base_local_path.format(sl_dir))
                 except HdfsError as e:
                     # 这个hdfs库无法判断文件是否存在，只能采用这种粗暴的方式
@@ -121,6 +124,8 @@ def download_static_data_from_hdfs(base_local_path):
     for sl_dir in static_dir_list:
         if not os.path.exists(base_local_path.format(sl_dir)):
             # clear_local_path(base_local_path.format(sl_dir))
+            if not os.path.exists(base_local_path.format(sl_dir)):
+                os.mkdir(base_local_path.format(sl_dir))
             print("downloading {} from {}".format(base_local_path.format(sl_dir), base_remote_static_path.format(sl_dir)))
             hdfs_client.download(base_remote_static_path.format(sl_dir), base_local_path.format(sl_dir))
         else:
@@ -228,8 +233,12 @@ def train_model(**kwargs):
     bst = xgb.train(params, dtrain, num_boost_round=1000, evals=watchlist)
     clear_local_path(local_model_path)
     bst.save_model(local_model_path)
-    hdfs_client.upload(uploaded_model_path, local_model_path)
-    print('uploaded local model {} to {} successfully'.format(local_model_path, uploaded_model_path))
+    # 第二个参数为False，当文件不存在时return none，文件存在时返回文件信息
+    if hdfs_client.status(uploaded_model_path, False):
+        hdfs_client.upload(uploaded_model_path, local_model_path)
+        print('uploaded local model {} to {} successfully'.format(local_model_path, uploaded_model_path))
+    else:
+        print('{}已存在'.format(uploaded_model_path))
 
 
 train_model_operator = PythonOperator(
@@ -279,8 +288,12 @@ def get_metrics(**kwargs):
     with open(local_model_meta_path, "w") as f:
         f.write(res_json)
 
-    hdfs_client.upload(base_remote_model_path.format(model_id)+'.meta.json', local_model_meta_path)
-    print('uploaded local meta {} to {} successfully'.format(local_model_meta_path, base_remote_model_path.format(model_id)+'.meta.json'))
+    # 第二个参数为False，当文件不存在时return none，文件存在时返回文件信息
+    if hdfs_client.status(base_remote_model_path.format(model_id) + '.meta.json', False):
+        hdfs_client.upload(base_remote_model_path.format(model_id) + '.meta.json', local_model_meta_path)
+        print('uploaded local meta {} to {} successfully'.format(local_model_meta_path, base_remote_model_path.format( model_id) + '.meta.json'))
+    else:
+        print('{}已存在'.format(base_remote_model_path.format(model_id) + '.meta.json'))
 
 
 get_metrics_operator = PythonOperator(
@@ -340,7 +353,12 @@ def predict(**kwargs):
     clear_local_path(base_local_predict_res_path.format(predict_res_name))
     pred_full_table.to_csv(base_local_predict_res_path.format(predict_res_name))
 
-    hdfs_client.upload(base_remote_predict_res_path.format(predict_res_name), base_local_predict_res_path.format(predict_res_name))
+    # 第二个参数为False，当文件不存在时return none，文件存在时返回文件信息
+    if hdfs_client.status(base_remote_predict_res_path.format(predict_res_name), False):
+        hdfs_client.upload(base_remote_predict_res_path.format(predict_res_name), base_local_predict_res_path.format(predict_res_name))
+        print('uploaded predict res {} to {} successfully'.format(base_local_predict_res_path.format(predict_res_name), base_remote_predict_res_path.format(predict_res_name)))
+    else:
+        print('{}已存在'.format(base_remote_predict_res_path.format(predict_res_name)))
 
 
 predict_operator = PythonOperator(

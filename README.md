@@ -154,6 +154,10 @@ nohup airflow scheduler &
 ```
 # 8. 配置参数方式
 * Menu -> Admin -> Variables
+![](https://upload-images.jianshu.io/upload_images/13252021-93c7fafe7430c398.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+![](https://upload-images.jianshu.io/upload_images/13252021-c161fcbc065fe77e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
 # 9. 一个可配置参数的自学习demo
 ```python
 # -*- coding: utf-8 -*-
@@ -469,6 +473,7 @@ get_metrics_operator.set_upstream(train_model_operator)
 
 # 10. sensor
 就是根据poke_interval这个时间间隔去轮询。不同的sensor（eg. hdfs_sensor, http_sensor）去实现不同的poke方法
+![base_sensor源码](https://upload-images.jianshu.io/upload_images/13252021-edfd84acd3a9c41d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 *看来自带的hdfs_sensor不支持python3*
 ```
@@ -575,10 +580,14 @@ local_env['JAVA_HOME'] = Variable.get('JAVA_HOME')
 ```
 * 使用自定义环境变量的方式好像并没有成功！
 * 使用下面这个方法，在web中配置参数后可以生效。
+![](https://upload-images.jianshu.io/upload_images/13252021-d5ea87d9d4338e18.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 `Menu -> Admin -> Connections可以在这里配置连接所需参数。`
+![](https://upload-images.jianshu.io/upload_images/13252021-91046da3d8e06b7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
 
 # 11. 自学习、批量预估设计
+![airflow_sl&bp.jpg](https://upload-images.jianshu.io/upload_images/13252021-c85b756756410650.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 # 12. 发现
 * 上游所有依赖节点都跑完，下个节点才会运行。
