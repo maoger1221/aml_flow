@@ -656,7 +656,7 @@ ENTRYPOINT ["bash", "/root/start.sh"]
 ```
 #!/bin/bash
 
-source activate he_test
+source activate $CONDA_AML
 airflow initdb
 nohup airflow webserver -p 8080 &
 nohup airflow scheduler &
@@ -667,7 +667,8 @@ airflow variables -s sl_config '{"hdfs_url":"http://172.27.128.237:50070","hdfs_
 # 取消访问notebook需要token或密码的配置
 jupyter notebook --generate-config
 echo "c.NotebookApp.token = ''" >> /root/.jupyter/jupyter_notebook_config.py
-mkdir /root/notebook
+mkdir -p /root/notebook
+# 挂载的本地路径
 cd /root/notebook
 # 脚本中最后一个进程一定要用前台运行方式即在进程最后不加&(&表示后台运行)，否则容器会退出
 nohup jupyter notebook --allow-root --ip=0.0.0.0 --port=8888
@@ -1093,4 +1094,11 @@ spec:
             cpu: "20"
         ports:
         - containerPort: 80
+        volumeMounts:
+        - mountPath: /root/notebook/local_file
+          name: notebook-path
+      volumes:
+      - name: notebook-path
+        hostPath:
+          path: /root/he_test
 ```
