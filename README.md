@@ -663,7 +663,7 @@ nohup airflow scheduler &
 # 配置connections
 airflow connections --add --conn_id aml_hdfs --conn_type 'hdfs' --conn_host m7-solution-cpu01 --conn_login hdfs --conn_port 8020
 # 配置variables
-airflow variables -s sl_config '{"hdfs_url":"http://172.27.128.237:50070","hdfs_user":"hdfs","daily_dir_list":["trx","str"],"static_dir_list":["retail","corporate","account"],"base_local_path":"/root/airflow/aml_data/sl_data/{}/","base_local_metrics_path":"/root/airflow/aml_data/sl_data/{}/for_metrics/","base_local_model_path":"/root/airflow/aml_data/model/{}","base_local_model_meta_path":"/root/airflow/aml_data/model_meta/{}","base_local_predict_res_path":"/root/airflow/aml_data/bp_data/res/{}","model_prefix":"he_test_xgboost","predict_res_prefix":"pred_full_table","base_remote_daily_path":"/anti-money/daily_data_group/{}/daily/{}","base_remote_static_path":"/anti-money/daily_data_group/{}/all","base_remote_model_path":"/anti-money/he_test/model/{}","base_remote_model_meta_path":"/anti-money/he_test/model_meta/{}","base_remote_predict_res_path":"/anti-money/he_test/predict_res/{}","specified_model_path":"","start_time":"2018-05-01","end_time":"2018-05-27","metrics_start_time":"2018-05-28","metrics_end_time":"2018-05-30"}'
+airflow variables -s sl_config $SL_CONFIG
 # 取消访问notebook需要token或密码的配置
 jupyter notebook --generate-config
 echo "c.NotebookApp.token = ''" >> /root/.jupyter/jupyter_notebook_config.py
@@ -1048,7 +1048,18 @@ get_data_operator >> process_data_operator >> train_model_operator >> get_metric
 get_data_operator >> bp_process_data_operator >> model_sensor >> predict_operator
 ```
 `aml.yaml`
+
+/root/he_test挂载到/root/notebook/local_file
+添加configMap，并配置到container的环境变量中
 ```
+apiVersion: v1
+data:
+  sl.config: '{"hdfs_url":"http://172.27.128.237:50070","hdfs_user":"hdfs","daily_dir_list":["trx","str"],"static_dir_list":["retail","corporate","account"],"base_local_path":"/root/airflow/aml_data/sl_data/{}/","base_local_metrics_path":"/root/airflow/aml_data/sl_data/{}/for_metrics/","base_local_model_path":"/root/airflow/aml_data/model/{}","base_local_model_meta_path":"/root/airflow/aml_data/model_meta/{}","base_local_predict_res_path":"/root/airflow/aml_data/bp_data/res/{}","model_prefix":"he_test_xgboost","predict_res_prefix":"pred_full_table","base_remote_daily_path":"/anti-money/daily_data_group/{}/daily/{}","base_remote_static_path":"/anti-money/daily_data_group/{}/all","base_remote_model_path":"/anti-money/he_test/model/{}","base_remote_model_meta_path":"/anti-money/he_test/model_meta/{}","base_remote_predict_res_path":"/anti-money/he_test/predict_res/{}","specified_model_path":"","start_time":"2018-05-01","end_time":"2018-05-27","metrics_start_time":"2018-05-28","metrics_end_time":"2018-05-30"}'
+kind: ConfigMap
+metadata:
+  name: aml-config
+  namespace: aml
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -1097,6 +1108,12 @@ spec:
         volumeMounts:
         - mountPath: /root/notebook/local_file
           name: notebook-path
+        env:
+        - name: SL_CONFIG
+          valueFrom:
+            configMapKeyRef:
+              name: aml-config
+              key: sl.config
       volumes:
       - name: notebook-path
         hostPath:
